@@ -38,7 +38,11 @@ public class SecurityConfig {
         http.csrf().disable()
             .authorizeHttpRequests()
             .requestMatchers("/auth/**").permitAll()
-            .anyRequest().authenticated();
+            .requestMatchers("/admin/**").hasRole("ADMIN")
+            .requestMatchers("/user/**").hasRole("USER")
+            .anyRequest().authenticated()
+            .and()
+            .httpBasic(); // For testing purposes, use JWT in production
         return http.build();
     }
 }
