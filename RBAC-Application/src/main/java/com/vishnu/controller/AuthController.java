@@ -1,60 +1,34 @@
 package com.vishnu.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
 import com.vishnu.entity.User;
+import com.vishnu.repo.UserRepository;
 import com.vishnu.service.JWTService;
-import com.vishnu.service.UserService;
+import com.vishnu.service.AuthenticationService;
 
-
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
-    @Autowired
-    private UserService userService;
+    private final UserRepository userRepository;
+    private final JWTService jwtService;
+    private final AuthenticationService authenticationService;
+    private final PasswordEncoder passwordEncoder; // Changed to PasswordEncoder
 
-    @Autowired
-    private JWTService jwtService;
-
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    public AuthController(UserRepository userRepository, JWTService jwtService, AuthenticationService authenticationService, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.jwtService = jwtService;
+        this.authenticationService = authenticationService;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @PostMapping("/register")
-    public String register(@RequestBody User user) {
-        userService.saveUser(user);
-        return "User registered successfully!";
-    }
-
-    @PostMapping("/login")
-    public String login(@RequestBody User user) {
-        Authentication authentication = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword())
-        );
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        return jwtService.generateToken(user.getUsername());
-    }
-
-    @GetMapping("/admin")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public String adminAccess() {
-        return "Welcome, Admin!";
-    }
-
-    @GetMapping("/user")
-    @PreAuthorize("hasRole('ROLE_USER')")
-    public String userAccess() {
-        return "Welcome, User!";
-    }
-
-    @GetMapping("/moderator")
-    @PreAuthorize("hasRole('ROLE_MODERATOR')")
-    public String moderatorAccess() {
-        return "Welcome, Moderator!";
+    public ResponseEntity<String> register(@RequestBody User user) {
+        user.setPassword(passwordEncoder.encode(user.getPassword())); // Use PasswordEncoder
+        userRepository.save(user);
+        return ResponseEntity.ok("User registered successfully!");
     }
 }

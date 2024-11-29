@@ -1,28 +1,26 @@
 package com.vishnu.service;
 
-import com.vishnu.entity.Role;
-import com.vishnu.entity.User;
-import com.vishnu.repo.UserRepository;
-import com.vishnu.securityConfig.CustomUserDetails;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.Set;
+import com.vishnu.entity.User;
+import com.vishnu.repo.UserRepository;
 
 @Service
-public class UserService implements UserDetailsService {
+@Primary
+public class UserService implements UserManagementService, UserDetailsService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -31,20 +29,9 @@ public class UserService implements UserDetailsService {
         return new CustomUserDetails(user);
     }
 
+    @Override
     public void saveUser(User user) {
-        // Encrypt the user's password
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-        // Assign roles to the user
-        if (user.getRoles() == null || user.getRoles().isEmpty()) {
-            Set<Role> roles = new HashSet<>();
-            Role defaultRole = new Role();
-            defaultRole.setName("ROLE_USER");
-            roles.add(defaultRole);
-            user.setRoles(roles);
-        }
-
-        // Save the user to the database
         userRepository.save(user);
     }
 }
